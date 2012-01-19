@@ -16,7 +16,7 @@ In order to communicate with the Airbrake servers, the PHP client depends on a c
 
 Getting Started
 ---------------
-To get started, you must first ensure that the aforementioned dependencies are installed. Afterwards, you may run the [provided example](https://github.com/rentjuice/airbreak-php-client/blob/master/example.php) to verify that the dependencies are met and that your Airbrake account is set up correctly. In order to run the example, you will need to provide your API key; I found mine on the project dashboard:
+To get started, you must first ensure that the aforementioned dependencies are installed. Afterwards, you may run the [provided example](https://github.com/rentjuice/airbrake-php-client/blob/master/example.php) to verify that the dependencies are met and that your Airbrake account is set up correctly. In order to run the example, you will need to provide your API key; I found mine on the project dashboard:
 
 ![Project Dashboard](http://f.cl.ly/items/0M0b3I0r092j2B2A3X1d/Screen%20shot%202012-01-18%20at%204.15.12%20PM.png)
 
