@@ -11,6 +11,7 @@ This client is freely distributed under the [DBAD License](http://dbad-license.o
 Dependencies
 ------------
 In order to communicate with the Airbrake servers, the PHP client depends on a couple dependencies to be installed before running. In no particular order, these dependencies are:
+
   - [cURL](http://www.php.net/manual/en/book.curl.php), to send HTTP requests to Airbrake
   - [SimpleXML](http://us.php.net/manual/en/book.simplexml.php), to validate and parse XML
 
