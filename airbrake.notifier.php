@@ -126,17 +126,35 @@ class AirbrakeNotifier {
 
 	    // track the request that caused this error
 	    $component = self::escape(self::fetch($backtrace[0], 'class', __CLASS__));
-	    $file = self::fetch($backtrace[0], 'file', __FILE__);
-	    $request = $notice->addChild('request');
-	    $protocol = strtolower(array_shift(explode('/', self::fetch($_SERVER, 'SERVER_PROTOCOL'))));
-	    if ($protocol) {
-		    $host = self::fetch($_SERVER, 'SERVER_NAME');
-		    $path = self::fetch($_SERVER, 'REQUEST_URI');
-		    $file = "{$protocol}://{$host}{$path}";
-	    }
-	    $request->addChild('url', self::escape($file));
-	    $request->addChild('action', self::fetch($backtrace[0], 'function', __FUNCTION__));
-	    $request->addChild('component', $component);
+        $action    = self::fetch($backtrace[0], 'function', __FUNCTION__);
+        $request = $notice->addChild('request');
+
+        // track any and all params that came in with this request
+        if ($_REQUEST) {
+            $params = $request->addChild('params');
+            foreach ($_REQUEST as $key => $value) {
+                $var = $params->addChild('var', self::escape($value));
+                $var->addAttribute('key', self::escape($key));
+            }
+            // Airbrake overrides "controller" attributes with the component...
+            $request->addChild('component', fetch($_REQUEST, 'controller', $component));
+            // Allow users to specify actions via the $_REQUEST
+            $request->addChild('action', fetch($_REQUEST, 'action', $action));
+        } else {
+            $request->addChild('component', $component);
+            $request->addChild('action', $action);
+        }
+
+        // get the URL that caused this error
+        $protocol = strtolower(array_shift(explode('/', self::fetch($_SERVER, 'SERVER_PROTOCOL'))));
+        if ($protocol) {
+            $host = self::fetch($_SERVER, 'SERVER_NAME');
+            $path = self::fetch($_SERVER, 'REQUEST_URI');
+            $url = "{$protocol}://{$host}{$path}";
+        } else {
+            $url = self::fetch($backtrace[0], 'file', __FILE__);
+        }
+        $request->addChild('url', self::escape($url));
 
         // define the error message and class
         $error = $notice->addChild('error');
@@ -152,15 +170,6 @@ class AirbrakeNotifier {
             if (array_key_exists('function', $lineTrace)) {
 	            $line->addAttribute('method', self::escape($lineTrace['function']));
             }
-        }
-
-        // track any and all params that came in with this request
-        if ($_REQUEST) {
-	        $params = $request->addChild('params');
-	        foreach ($_REQUEST as $key => $value) {
-		        $var = $params->addChild('var', self::escape($value));
-		        $var->addAttribute('key', self::escape($key));
-	        }
         }
 
         // track the session that triggered the error (if any)
