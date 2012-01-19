@@ -53,7 +53,7 @@ try {
 
 Special Thanks
 --------------
-This client would not be available if it weren't for the kind graces of the development tead at [RentJuice](http://rentjuice.com).
+This client would not be available if it weren't for the kind graces of the development team at [RentJuice](http://rentjuice.com).
 RentJuice uses this client internally, and allocated time to open-source it for the good of error loggin' devs everywhere.
 If you are a broker, landlord or anyone who deals with residential real estate, consider checking them out as suitable "thanks"
 for using this plugin.
