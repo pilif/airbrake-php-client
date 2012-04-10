@@ -73,7 +73,30 @@ class AirbrakeNotifier {
      * @return string|bool The created notice ID returned by the API, false if an error occurred
      */
     public function notifyException(Exception $exeption, array $session = array()) {
-        return $this->notify($exeption->getMessage(), $exeption->getTrace(), $session);
+        return $this->notify($exeption->getMessage(), $this->getFixedTrace($exeption), $session);
+    }
+
+    /**
+     * Returns a more airbrake-ish backtrace
+     *
+     * php has the nasty habit (really? a nasty habit? Unthinkable!) of
+     *    a) not including the actual spot of the error in the trace
+     *    b) naming the name of the function that's about to be called
+     *       instead of the one currently being executed.
+     * this fixes up the trace in order to get it into a state more useful
+     * in the contect of airbrake
+     *
+     * @param Exception $e the exception to get the trace for
+     * @return array The cleaned up backtrace
+     */
+    private function getFixedTrace(Exception $e){
+        $t = $e->getTrace();
+        array_unshift($t, array('file' => $e->getFile(), 'line' => $e->getLine()));
+        for($i = 0; $i < count($t); $i++){
+            $t[$i]['function'] = $t[$i+1]['function'];
+            $t[$i]['class'] = $t[$i+1]['class'];
+        }
+        return $t;
     }
 
     /**
