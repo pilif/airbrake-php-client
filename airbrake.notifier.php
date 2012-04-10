@@ -162,9 +162,9 @@ class AirbrakeNotifier {
                 $var->addAttribute('key', self::escape($key));
             }
             // Airbrake overrides "controller" attributes with the component...
-            $request->addChild('component', fetch($_REQUEST, 'controller', $component));
+            $request->addChild('component', self::fetch($_REQUEST, 'controller', $component));
             // Allow users to specify actions via the $_REQUEST
-            $request->addChild('action', fetch($_REQUEST, 'action', $action));
+            $request->addChild('action', self::fetch($_REQUEST, 'action', $action));
         } else {
             $request->addChild('component', $component);
             $request->addChild('action', $action);
