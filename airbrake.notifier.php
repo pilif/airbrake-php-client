@@ -155,12 +155,16 @@ class AirbrakeNotifier {
         $request = $notice->addChild('request');
 
         // track any and all params that came in with this request
+        $r = array();
+        foreach(array('GET', 'POST', 'COOKIE', 'FILES') as $vtc){
+            $v = '_'.$vtc;
+            if ($GLOBALS[$v]) $r[$vtc] = $GLOBALS[$v];
+        }
+        $params = $request->addChild('params');
+        $this->serializeVar($params, $r);
+
         if ($_REQUEST) {
-            $params = $request->addChild('params');
-            foreach ($_REQUEST as $key => $value) {
-                $var = $params->addChild('var', self::escape($value));
-                $var->addAttribute('key', self::escape($key));
-            }
+
             // Airbrake overrides "controller" attributes with the component...
             $request->addChild('component', self::fetch($_REQUEST, 'controller', $component));
             // Allow users to specify actions via the $_REQUEST
@@ -199,20 +203,14 @@ class AirbrakeNotifier {
         }
 
         // track the session that triggered the error (if any)
-        if ($session) {
+        if ($_SESSION) {
             $extraData = $request->addChild('session');
-            foreach ($session as $key => $value) {
-                $var = $extraData->addChild('var', self::escape($value));
-                $var->addAttribute('key', self::escape($key));
-            }
+            $this->serializeVar($extraData, $_SESSION);
         }
 
         // track any and all server parameters
         $cgiData = $request->addChild('cgi-data');
-        foreach ($_SERVER as $key => $value) {
-            $var = $cgiData->addChild('var', self::escape($value));
-            $var->addAttribute('key', self::escape($key));
-        }
+        $this->serializeVar($cgiData, $_SERVER);
 
         // finally, track the server environment
         $envName = isset(self::$environmentName) ? self::$environmentName : (self::$debugMode ? 'development' : 'production');
@@ -223,6 +221,19 @@ class AirbrakeNotifier {
         $serverEnv->addChild('hostname', self::escape(gethostname()));
 
         return $notice;
+    }
+
+    private function serializeVar(SimpleXMLElement $el, $data){
+        foreach($data as $key => $value){
+            $var = $el->addChild('var');
+            $var->addAttribute('key', self::escape($key));
+            if (is_object($value)){ $value = (array)$value; }
+            if (is_array($value)){
+                $this->serializeVar($var, $value);
+            }else{
+                $var->{0} = self::escape($value);
+            }
+        }
     }
 
     /**
@@ -289,7 +300,7 @@ class AirbrakeNotifier {
     private static function escape($object) {
         if (!is_string($object)) {
             $object = print_r($object, true);
-        } return htmlentities($object);
+        } return htmlentities(str_replace("\0", '_', $object));
     }
 
 }
