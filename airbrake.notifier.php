@@ -102,13 +102,14 @@ class AirbrakeNotifier {
     /**
      * Tracks an error against the Airbrake Notifier API
      * @param string $message The message to track (this is required)
+     * @param string $cls Exception class
      * @param array $backtrace The backtrace for the error, formatted like the output of debug_backtrace()
      * @param array $session An optional associative array of extra key/value pairs to pass to the API
      * @see http://php.net/manual/en/function.debug-backtrace.php for info on how to format the trace
      * @return string|bool The created notice ID returned by the API, false if an error occurred
      */
-    public function notify($message, array $backtrace = array(), array $session = array()) {
-        $notice   = self::createNoticeXml($message, $backtrace, $session);
+    public function notify($message, $cls, array $backtrace = array(), array $session = array()) {
+        $notice   = self::createNoticeXml($message, $cls, $backtrace, $custdata);
         $version  = intval(self::API_VERSION);
         $response = $this->execute("/notifier_api/v{$version}/notices", $notice);
         $noticeId = $response && property_exists($response, 'id') ? $response->id[0] : false;
@@ -125,12 +126,13 @@ class AirbrakeNotifier {
      * Creates the notice XML for a given error message
      * @static
      * @param string $message The error message to track
+     * @param string $cls Exception class
      * @param array $backtrace The stack trace of the generated error
      * @param array $session A map of extra data to send with the error
      * @see http://airbrake.io/airbrake_2_2.xsd for details on the generated XML
      * @return SimpleXMLElement The notice as a well-formed XML object
      */
-    public function createNoticeXml($message, array $backtrace = array(), array $session = array()) {;
+    public function createNoticeXml($message, $cls, array $backtrace = array(), array $custdata = array()) {;
 
         // use fallbacks if empty arrays are provided
         if (!$session) $session = $_COOKIE;
@@ -182,10 +184,11 @@ class AirbrakeNotifier {
         // define the error message and class
         $error = $notice->addChild('error');
         $error->addChild('message', self::escape($message));
-        $error->addChild('class', $component);
+        $error->addChild('class', $cls);
 
         // catalog the error backtrace
         $trace = $error->addChild('backtrace');
+
         foreach ($backtrace as $lineTrace) {
             $line = $trace->addChild('line');
             $line->addAttribute('file', self::escape(self::fetch($lineTrace, 'file', __FILE__)));
