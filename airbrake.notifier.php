@@ -69,11 +69,11 @@ class AirbrakeNotifier {
     /**
      * Tracks an exception against the Airbrake Notifier API
      * @param Exception $exeption The exception to track
-     * @param array $session An optional associative array of extra key/value pairs to pass to the API
+     * @param array $custdata An optional associative array of extra key/value pairs to pass to the API
      * @return string|bool The created notice ID returned by the API, false if an error occurred
      */
-    public function notifyException(Exception $exeption, array $session = array()) {
-        return $this->notify($exeption->getMessage(), $this->getFixedTrace($exeption), $session);
+    public function notifyException(Exception $exeption, array $custdata = array()) {
+        return $this->notify($exeption->getMessage(), get_class($exeption), $this->getFixedTrace($exeption), $custdata);
     }
 
     /**
@@ -104,15 +104,16 @@ class AirbrakeNotifier {
      * @param string $message The message to track (this is required)
      * @param string $cls Exception class
      * @param array $backtrace The backtrace for the error, formatted like the output of debug_backtrace()
-     * @param array $session An optional associative array of extra key/value pairs to pass to the API
+     * @param array $custdata An optional associative array of extra key/value pairs to pass to the API
      * @see http://php.net/manual/en/function.debug-backtrace.php for info on how to format the trace
      * @return string|bool The created notice ID returned by the API, false if an error occurred
      */
-    public function notify($message, $cls, array $backtrace = array(), array $session = array()) {
+    public function notify($message, $cls, array $backtrace = array(), array $custdata = array()) {
         $notice   = self::createNoticeXml($message, $cls, $backtrace, $custdata);
         $version  = intval(self::API_VERSION);
         $response = $this->execute("/notifier_api/v{$version}/notices", $notice);
-        $noticeId = $response && property_exists($response, 'id') ? $response->id[0] : false;
+        $noticeId = $response && property_exists($response, '_id') ? $response->_id[0] : false;
+
         if (self::$debugMode) {
             $noticeUrl = $response && property_exists($response, 'url') ? $response->url[0] : '';
             if ($noticeUrl) {
@@ -128,14 +129,13 @@ class AirbrakeNotifier {
      * @param string $message The error message to track
      * @param string $cls Exception class
      * @param array $backtrace The stack trace of the generated error
-     * @param array $session A map of extra data to send with the error
+     * @param array $custdata A map of extra data to send with the error
      * @see http://airbrake.io/airbrake_2_2.xsd for details on the generated XML
      * @return SimpleXMLElement The notice as a well-formed XML object
      */
     public function createNoticeXml($message, $cls, array $backtrace = array(), array $custdata = array()) {;
 
         // use fallbacks if empty arrays are provided
-        if (!$session) $session = $_COOKIE;
         if (!$backtrace) $backtrace = debug_backtrace();
 
         // create the top-level notice
@@ -156,6 +156,7 @@ class AirbrakeNotifier {
 
         // track any and all params that came in with this request
         $r = array();
+        if ($custdata) $r['custdata'] = $custdata;
         foreach(array('GET', 'POST', 'COOKIE', 'FILES') as $vtc){
             $v = '_'.$vtc;
             if ($GLOBALS[$v]) $r[$vtc] = $GLOBALS[$v];
